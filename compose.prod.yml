@@ -9,6 +9,4 @@ services:
   client:
     build:
       target: prod
-    ports:
-      - "80:80"
     restart: unless-stopped
