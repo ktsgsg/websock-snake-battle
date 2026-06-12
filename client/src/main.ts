@@ -104,6 +104,21 @@ let drawFn: ((input: {
   selfId: string;
 }) => void) | null = null;
 
+function leaveRoom() {
+  state.net.disconnect();
+  state.playerId = null;
+  state.roomCode = null;
+  state.isHost = false;
+  state.players = [];
+  state.grid = null;
+  state.snakes = [];
+  state.foods = [];
+  state.result = null;
+  state.error = null;
+  state.scene = 'title';
+  render();
+}
+
 function drawGame() {
   if (!drawFn || !state.grid || !state.playerId) return;
   drawFn({
@@ -247,6 +262,9 @@ function renderLobby(): HTMLElement {
       }),
     );
   }
+  const backBtn = el('button', { textContent: '← タイトルへ' });
+  backBtn.addEventListener('click', leaveRoom);
+  row.appendChild(backBtn);
   root.appendChild(row);
   return root;
 }
@@ -270,7 +288,9 @@ function renderGame(): HTMLElement {
   const debugRow = el('div', { className: 'row' });
   const dummyBtn = el('button', { textContent: '[DEBUG] Place dummy' });
   dummyBtn.addEventListener('click', () => state.net.send({ type: 'place_dummy' }));
-  debugRow.appendChild(dummyBtn);
+  const leaveBtn = el('button', { textContent: '← タイトルへ' });
+  leaveBtn.addEventListener('click', leaveRoom);
+  debugRow.append(dummyBtn, leaveBtn);
   root.appendChild(debugRow);
 
   root.appendChild(
@@ -333,6 +353,9 @@ function renderResult(): HTMLElement {
       }),
     );
   }
+  const backBtn = el('button', { textContent: '← タイトルへ' });
+  backBtn.addEventListener('click', leaveRoom);
+  row.appendChild(backBtn);
   root.appendChild(row);
   return root;
 }

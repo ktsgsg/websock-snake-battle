@@ -47,4 +47,12 @@ export class Net {
     this.handlers.add(h);
     return () => this.handlers.delete(h);
   }
+
+  disconnect() {
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
+    }
+    this.queue = [];
+  }
 }
