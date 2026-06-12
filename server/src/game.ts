@@ -12,6 +12,7 @@ export type GameState = {
   foods: Cell[];
   finished: boolean;
   winnerId: string | null;
+  playerCount: number;
 };
 
 const OPPOSITE: Record<Direction, Direction> = {
@@ -55,7 +56,7 @@ export function createInitialState(
     };
   });
   const foods = [randomEmptyCell(snakes, [])];
-  return { tick: 0, snakes, foods, finished: false, winnerId: null };
+  return { tick: 0, snakes, foods, finished: false, winnerId: null, playerCount: players.length };
 }
 
 export function setDirection(
@@ -178,7 +179,8 @@ export function step(state: GameState): GameState {
   }
 
   const alive = state.snakes.filter((s) => s.alive && !s.dummy);
-  if (alive.length <= 1) {
+  const threshold = state.playerCount > 1 ? 1 : 0;
+  if (alive.length <= threshold) {
     state.finished = true;
     state.winnerId = alive.length === 1 ? alive[0].playerId : null;
   }
