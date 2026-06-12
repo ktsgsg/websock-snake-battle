@@ -3,6 +3,12 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.server
+    environment:
+      GAME_TICK_MS: ${GAME_TICK_MS:-}
+      GAME_GRID_W: ${GAME_GRID_W:-}
+      GAME_GRID_H: ${GAME_GRID_H:-}
+      GAME_MAX_PLAYERS: ${GAME_MAX_PLAYERS:-}
+      GAME_INITIAL_LENGTH: ${GAME_INITIAL_LENGTH:-}
 
   client:
     build:

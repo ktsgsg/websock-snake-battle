@@ -1,11 +1,11 @@
 import {
   Cell,
   Direction,
-  GRID,
   PLAYER_COLORS,
   SnakeState,
   WallCell,
 } from '../../shared/protocol.js';
+import { config } from './config.js';
 
 export type GameState = {
   tick: number;
@@ -34,20 +34,20 @@ const DELTA: Record<Direction, Cell> = {
 export function createInitialState(
   players: { id: string; name: string }[],
 ): GameState {
+  const margin = Math.min(5, Math.floor(config.grid.w / 4));
   const spawns: { pos: Cell; dir: Direction }[] = [
-    { pos: { x: 5, y: 5 }, dir: 'right' },
-    { pos: { x: GRID.w - 6, y: 5 }, dir: 'left' },
-    { pos: { x: 5, y: GRID.h - 6 }, dir: 'right' },
-    { pos: { x: GRID.w - 6, y: GRID.h - 6 }, dir: 'left' },
+    { pos: { x: margin, y: margin }, dir: 'right' },
+    { pos: { x: config.grid.w - 1 - margin, y: margin }, dir: 'left' },
+    { pos: { x: margin, y: config.grid.h - 1 - margin }, dir: 'right' },
+    { pos: { x: config.grid.w - 1 - margin, y: config.grid.h - 1 - margin }, dir: 'left' },
   ];
   const snakes: SnakeState[] = players.map((p, i) => {
     const { pos, dir } = spawns[i];
     const dx = dir === 'right' ? -1 : 1;
-    const segments: Cell[] = [
-      { x: pos.x, y: pos.y },
-      { x: pos.x + dx, y: pos.y },
-      { x: pos.x + dx * 2, y: pos.y },
-    ];
+    const segments: Cell[] = [];
+    for (let j = 0; j < config.initialLength; j++) {
+      segments.push({ x: pos.x + dx * j, y: pos.y });
+    }
     return {
       playerId: p.id,
       name: p.name,
@@ -138,9 +138,9 @@ export function step(state: GameState): GameState {
 
     if (
       newHead.x < 0 ||
-      newHead.x >= GRID.w ||
+      newHead.x >= config.grid.w ||
       newHead.y < 0 ||
-      newHead.y >= GRID.h
+      newHead.y >= config.grid.h
     ) {
       s.alive = false;
       continue;
@@ -220,8 +220,8 @@ function randomEmptyCell(snakes: SnakeState[], walls: WallCell[], foods: Cell[])
   for (const f of foods) occupied.add(`${f.x},${f.y}`);
 
   const free: Cell[] = [];
-  for (let y = 0; y < GRID.h; y++) {
-    for (let x = 0; x < GRID.w; x++) {
+  for (let y = 0; y < config.grid.h; y++) {
+    for (let x = 0; x < config.grid.w; x++) {
       if (!occupied.has(`${x},${y}`)) free.push({ x, y });
     }
   }

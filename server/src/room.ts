@@ -1,14 +1,12 @@
 import { WebSocket } from 'ws';
 import {
   ClientMessage,
-  GRID,
-  MAX_PLAYERS,
   PLAYER_COLORS,
   Player,
   PlayerResult,
   ServerMessage,
-  TICK_MS,
 } from '../../shared/protocol.js';
+import { config } from './config.js';
 import {
   GameState,
   addDummy,
@@ -40,7 +38,7 @@ export class Room {
   }
 
   canJoin(): boolean {
-    return this.members.size < MAX_PLAYERS && this.game === null;
+    return this.members.size < config.maxPlayers && this.game === null;
   }
 
   isEmpty(): boolean {
@@ -141,7 +139,7 @@ export class Room {
     }));
     this.game = createInitialState(players);
     this.eliminationOrder = [];
-    this.broadcast({ type: 'game_start', grid: GRID, tickMs: TICK_MS });
+    this.broadcast({ type: 'game_start', grid: config.grid, tickMs: config.tickMs });
     this.broadcast({
       type: 'state',
       tick: this.game.tick,
@@ -150,7 +148,7 @@ export class Room {
       walls: this.game.walls,
     });
 
-    this.loop = setInterval(() => this.tick(), TICK_MS);
+    this.loop = setInterval(() => this.tick(), config.tickMs);
   }
 
   private tick() {
