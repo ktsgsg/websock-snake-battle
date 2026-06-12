@@ -187,9 +187,11 @@ export class Room {
   private buildRanking(): PlayerResult[] {
     if (!this.game) return [];
     const survivors = this.game.snakes
-      .filter((s) => s.alive)
+      .filter((s) => s.alive && !s.dummy)
       .map((s) => s.playerId);
-    const order = [...this.eliminationOrder].reverse();
+    const order = [...this.eliminationOrder].filter(
+      (pid) => !this.game!.snakes.find((s) => s.playerId === pid)?.dummy,
+    ).reverse();
     const ranked = [...survivors, ...order];
     return ranked.map((pid, idx) => {
       const m = this.members.get(pid);

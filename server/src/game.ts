@@ -126,7 +126,7 @@ export function step(state: GameState): GameState {
   const ateFoodBy = new Map<string, number>();
 
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.dummy) continue;
     const newHead = proposedHeads.get(s.playerId)!;
 
     if (

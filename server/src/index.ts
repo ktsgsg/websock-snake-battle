@@ -87,7 +87,9 @@ function handle(session: Session, msg: ClientMessage) {
     }
     case 'start_game':
     case 'set_direction':
-    case 'restart': {
+    case 'restart':
+    case 'place_dummy':
+    case 'drop_block': {
       if (!session.room) return;
       session.room.handleMessage(session.id, msg);
       break;

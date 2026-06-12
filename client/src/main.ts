@@ -86,7 +86,7 @@ function handleServer(msg: ServerMessage) {
     case 'state':
       state.snakes = msg.snakes;
       state.foods = msg.foods;
-      state.walls = msg.walls;
+      state.walls = msg.walls ?? [];
       if (state.scene === 'game') drawGame();
       break;
     case 'game_over':
