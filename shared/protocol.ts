@@ -18,6 +18,7 @@ export type SnakeState = {
   segments: Cell[];
   alive: boolean;
   dir: Direction;
+  pendingDir?: Direction;
   dummy?: true;
 };
 
