@@ -322,10 +322,25 @@ function renderGame(): HTMLElement {
 }
 
 function renderResult(): HTMLElement {
-  const root = el('div', { className: 'screen' });
+  const wrap = el('div', { id: 'resultWrap' });
+
+  if (state.grid && state.playerId) {
+    const { canvas, draw } = createCanvas(state.grid);
+    canvas.classList.add('result-bg');
+    draw({
+      grid: state.grid,
+      snakes: state.snakes,
+      foods: state.foods,
+      walls: state.walls,
+      selfId: state.playerId,
+    });
+    wrap.appendChild(canvas);
+  }
+
+  const card = el('div', { className: 'screen result-card' });
   const result = state.result!;
   const winner = result.ranking.find((r) => r.playerId === result.winnerId);
-  root.appendChild(
+  card.appendChild(
     el('h1', {
       textContent: winner ? `${winner.name} wins!` : 'Draw',
     }),
@@ -342,7 +357,7 @@ function renderResult(): HTMLElement {
     }
     list.appendChild(li);
   }
-  root.appendChild(list);
+  card.appendChild(list);
 
   const row = el('div', { className: 'row' });
   if (state.isHost) {
@@ -369,8 +384,9 @@ function renderResult(): HTMLElement {
   const backBtn = el('button', { textContent: '← タイトルへ' });
   backBtn.addEventListener('click', leaveRoom);
   row.appendChild(backBtn);
-  root.appendChild(row);
-  return root;
+  card.appendChild(row);
+  wrap.appendChild(card);
+  return wrap;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(

@@ -210,6 +210,28 @@ canvas {
   gap: 6px;
 }
 
+#resultWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.result-bg {
+  filter: blur(3px) brightness(0.9) saturate(0.7);
+  opacity: 0.75;
+  pointer-events: none;
+}
+
+.result-card {
+  position: absolute;
+  max-width: 480px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.18);
+}
+
 .ranking {
   list-style: none;
   padding: 0;
