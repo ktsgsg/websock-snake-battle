@@ -1,0 +1,22 @@
+FROM node:22-alpine AS base
+WORKDIR /app
+# workspace manifests だけ先にコピーしてキャッシュを活用
+COPY package*.json ./
+COPY server/package.json server/
+COPY client/package.json client/
+RUN npm ci --workspace=server
+
+# --- dev: ソースはボリュームマウントで渡す ---
+FROM base AS dev
+ENV PORT=8080
+EXPOSE 8080
+CMD ["npx", "tsx", "watch", "server/src/index.ts"]
+
+# --- prod: ソースを COPY してそのまま起動 ---
+FROM base AS prod
+COPY tsconfig.base.json ./
+COPY shared/ shared/
+COPY server/ server/
+ENV PORT=8080
+EXPOSE 8080
+CMD ["npx", "tsx", "server/src/index.ts"]

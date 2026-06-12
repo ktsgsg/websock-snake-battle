@@ -1,0 +1,14 @@
+services:
+  server:
+    build:
+      target: prod
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+
+  client:
+    build:
+      target: prod
+    ports:
+      - "80:80"
+    restart: unless-stopped

@@ -1,0 +1,27 @@
+services:
+  server:
+    build:
+      target: dev
+    volumes:
+      - ./server/src:/app/server/src
+      - ./server/tsconfig.json:/app/server/tsconfig.json:ro
+      - ./shared:/app/shared
+      - ./tsconfig.base.json:/app/tsconfig.base.json:ro
+    ports:
+      - "8080:8080"
+
+  client:
+    build:
+      target: dev
+    volumes:
+      - ./client/src:/app/client/src
+      - ./client/index.html:/app/client/index.html
+      - ./client/vite.config.ts:/app/client/vite.config.ts:ro
+      - ./client/tsconfig.json:/app/client/tsconfig.json:ro
+      - ./shared:/app/shared
+      - ./tsconfig.base.json:/app/tsconfig.base.json:ro
+    working_dir: /app/client
+    ports:
+      - "5173:5173"
+    environment:
+      WS_TARGET: ws://server:8080
