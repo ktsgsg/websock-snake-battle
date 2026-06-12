@@ -2,6 +2,8 @@ export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export type Cell = { x: number; y: number };
 
+export type WallCell = { x: number; y: number; color: string };
+
 export type Player = {
   id: string;
   name: string;
@@ -33,7 +35,8 @@ export type ClientMessage =
   | { type: 'start_game' }
   | { type: 'set_direction'; dir: Direction }
   | { type: 'restart' }
-  | { type: 'place_dummy' };
+  | { type: 'place_dummy' }
+  | { type: 'drop_block' };
 
 export type ServerMessage =
   | {
@@ -50,6 +53,7 @@ export type ServerMessage =
       tick: number;
       snakes: SnakeState[];
       foods: Cell[];
+      walls: WallCell[];
     }
   | {
       type: 'game_over';

@@ -1,9 +1,10 @@
-import { Cell, GridSize, SnakeState } from '../../shared/protocol.js';
+import { Cell, GridSize, SnakeState, WallCell } from '../../shared/protocol.js';
 
 export type RenderInput = {
   grid: GridSize;
   snakes: SnakeState[];
   foods: Cell[];
+  walls: WallCell[];
   selfId: string;
 };
 
@@ -34,6 +35,14 @@ export function createCanvas(grid: GridSize): {
       ctx.moveTo(0, y * cell + 0.5);
       ctx.lineTo(canvas.width, y * cell + 0.5);
       ctx.stroke();
+    }
+
+    for (const w of input.walls) {
+      ctx.fillStyle = w.color + 'aa';
+      ctx.fillRect(w.x * cell + 1, w.y * cell + 1, cell - 2, cell - 2);
+      ctx.strokeStyle = w.color;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(w.x * cell + 2, w.y * cell + 2, cell - 4, cell - 4);
     }
 
     for (const f of input.foods) {

@@ -13,6 +13,7 @@ import {
   GameState,
   addDummy,
   createInitialState,
+  dropBlock,
   killPlayer,
   setDirection,
   step,
@@ -91,6 +92,11 @@ export class Room {
         addDummy(this.game);
         break;
       }
+      case 'drop_block': {
+        if (!this.game || this.game.finished) return;
+        dropBlock(this.game, memberId);
+        break;
+      }
       default:
         break;
     }
@@ -141,6 +147,7 @@ export class Room {
       tick: this.game.tick,
       snakes: this.game.snakes,
       foods: this.game.foods,
+      walls: this.game.walls,
     });
 
     this.loop = setInterval(() => this.tick(), TICK_MS);
@@ -163,6 +170,7 @@ export class Room {
       tick: this.game.tick,
       snakes: this.game.snakes,
       foods: this.game.foods,
+      walls: this.game.walls,
     });
 
     if (this.game.finished) {
