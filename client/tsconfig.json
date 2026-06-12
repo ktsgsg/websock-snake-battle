@@ -4,7 +4,7 @@
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": "..",
     "outDir": "dist",
-    "types": []
+    "types": ["vite/client"]
   },
   "include": ["src/**/*.ts", "../shared/**/*.ts"]
 }
