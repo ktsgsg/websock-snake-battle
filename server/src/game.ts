@@ -70,7 +70,7 @@ export function setDirection(
   const snake = state.snakes.find((s) => s.playerId === playerId);
   if (!snake || !snake.alive) return;
   if (OPPOSITE[snake.dir] === dir) return;
-  snake.dir = dir;
+  snake.pendingDir = dir;
 }
 
 export function killPlayer(state: GameState, playerId: string) {
@@ -108,6 +108,13 @@ export function addDummy(state: GameState) {
 export function step(state: GameState): GameState {
   if (state.finished) return state;
   state.tick += 1;
+
+  for (const s of state.snakes) {
+    if (s.pendingDir && OPPOSITE[s.dir] !== s.pendingDir) {
+      s.dir = s.pendingDir;
+    }
+    s.pendingDir = undefined;
+  }
 
   const proposedHeads = new Map<string, Cell>();
   for (const s of state.snakes) {

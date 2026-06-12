@@ -293,17 +293,22 @@ function renderGame(): HTMLElement {
   }
   root.appendChild(hud);
   const debugRow = el('div', { className: 'row' });
-  const dummyBtn = el('button', { textContent: '[DEBUG] Place dummy' });
-  dummyBtn.addEventListener('click', () => state.net.send({ type: 'place_dummy' }));
+  if (import.meta.env.DEV) {
+    const dummyBtn = el('button', { textContent: '[DEBUG] Place dummy' });
+    dummyBtn.addEventListener('click', () => state.net.send({ type: 'place_dummy' }));
+    debugRow.appendChild(dummyBtn);
+  }
   const leaveBtn = el('button', { textContent: '← タイトルへ' });
   leaveBtn.addEventListener('click', leaveRoom);
-  debugRow.append(dummyBtn, leaveBtn);
+  debugRow.appendChild(leaveBtn);
   root.appendChild(debugRow);
 
   root.appendChild(
     el('div', {
       className: 'hint',
-      textContent: 'WASD / 矢印: 移動　Space: ブロックを切り離して壁を置く',
+      textContent: import.meta.env.DEV
+        ? 'WASD / 矢印: 移動　Space: ブロックを切り離して壁を置く　[DEV]'
+        : 'WASD / 矢印: 移動　Space: ブロックを切り離して壁を置く',
     }),
   );
 
