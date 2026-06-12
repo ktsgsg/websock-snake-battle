@@ -13,6 +13,7 @@ import {
   GameState,
   addDummy,
   createInitialState,
+  dropBlock,
   killPlayer,
   setDirection,
   step,
@@ -91,6 +92,11 @@ export class Room {
         addDummy(this.game);
         break;
       }
+      case 'drop_block': {
+        if (!this.game || this.game.finished) return;
+        dropBlock(this.game, memberId);
+        break;
+      }
       default:
         break;
     }
@@ -141,6 +147,7 @@ export class Room {
       tick: this.game.tick,
       snakes: this.game.snakes,
       foods: this.game.foods,
+      walls: this.game.walls,
     });
 
     this.loop = setInterval(() => this.tick(), TICK_MS);
@@ -163,6 +170,7 @@ export class Room {
       tick: this.game.tick,
       snakes: this.game.snakes,
       foods: this.game.foods,
+      walls: this.game.walls,
     });
 
     if (this.game.finished) {
@@ -179,9 +187,11 @@ export class Room {
   private buildRanking(): PlayerResult[] {
     if (!this.game) return [];
     const survivors = this.game.snakes
-      .filter((s) => s.alive)
+      .filter((s) => s.alive && !s.dummy)
       .map((s) => s.playerId);
-    const order = [...this.eliminationOrder].reverse();
+    const order = [...this.eliminationOrder].filter(
+      (pid) => !this.game!.snakes.find((s) => s.playerId === pid)?.dummy,
+    ).reverse();
     const ranked = [...survivors, ...order];
     return ranked.map((pid, idx) => {
       const m = this.members.get(pid);

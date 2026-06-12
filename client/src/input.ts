@@ -15,11 +15,19 @@ const MAP: Record<string, Direction> = {
   ArrowRight: 'right',
 };
 
-export function bindDirectionKeys(onDir: (dir: Direction) => void): () => void {
+export function bindDirectionKeys(
+  onDir: (dir: Direction) => void,
+  onDrop: () => void,
+): () => void {
   let lastSent: Direction | null = null;
   let lastTime = 0;
 
   const handler = (e: KeyboardEvent) => {
+    if (e.key === ' ') {
+      e.preventDefault();
+      onDrop();
+      return;
+    }
     const dir = MAP[e.key];
     if (!dir) return;
     e.preventDefault();

@@ -5,6 +5,7 @@ import {
   PlayerResult,
   ServerMessage,
   SnakeState,
+  WallCell,
 } from '../../shared/protocol.js';
 import { bindDirectionKeys } from './input.js';
 import { Net } from './net.js';
@@ -23,6 +24,7 @@ type State = {
   grid: GridSize | null;
   snakes: SnakeState[];
   foods: Cell[];
+  walls: WallCell[];
   result: { winnerId: string | null; ranking: PlayerResult[] } | null;
   error: string | null;
   unbindKeys: (() => void) | null;
@@ -40,6 +42,7 @@ const state: State = {
   grid: null,
   snakes: [],
   foods: [],
+  walls: [],
   result: null,
   error: null,
   unbindKeys: null,
@@ -83,6 +86,7 @@ function handleServer(msg: ServerMessage) {
     case 'state':
       state.snakes = msg.snakes;
       state.foods = msg.foods;
+      state.walls = msg.walls ?? [];
       if (state.scene === 'game') drawGame();
       break;
     case 'game_over':
@@ -101,6 +105,7 @@ let drawFn: ((input: {
   grid: GridSize;
   snakes: SnakeState[];
   foods: Cell[];
+  walls: WallCell[];
   selfId: string;
 }) => void) | null = null;
 
@@ -113,6 +118,7 @@ function leaveRoom() {
   state.grid = null;
   state.snakes = [];
   state.foods = [];
+  state.walls = [];
   state.result = null;
   state.error = null;
   state.scene = 'title';
@@ -125,6 +131,7 @@ function drawGame() {
     grid: state.grid,
     snakes: state.snakes,
     foods: state.foods,
+    walls: state.walls,
     selfId: state.playerId,
   });
 }
@@ -296,12 +303,13 @@ function renderGame(): HTMLElement {
   root.appendChild(
     el('div', {
       className: 'hint',
-      textContent: 'WASD or arrow keys to turn. Avoid walls and snakes.',
+      textContent: 'WASD / 矢印: 移動　Space: ブロックを切り離して壁を置く',
     }),
   );
 
-  state.unbindKeys = bindDirectionKeys((dir) =>
-    state.net.send({ type: 'set_direction', dir }),
+  state.unbindKeys = bindDirectionKeys(
+    (dir) => state.net.send({ type: 'set_direction', dir }),
+    () => state.net.send({ type: 'drop_block' }),
   );
 
   drawGame();

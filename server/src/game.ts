@@ -4,12 +4,14 @@ import {
   GRID,
   PLAYER_COLORS,
   SnakeState,
+  WallCell,
 } from '../../shared/protocol.js';
 
 export type GameState = {
   tick: number;
   snakes: SnakeState[];
   foods: Cell[];
+  walls: WallCell[];
   finished: boolean;
   winnerId: string | null;
   playerCount: number;
@@ -55,8 +57,9 @@ export function createInitialState(
       dir,
     };
   });
-  const foods = [randomEmptyCell(snakes, [])];
-  return { tick: 0, snakes, foods, finished: false, winnerId: null, playerCount: players.length };
+  const walls: WallCell[] = [];
+  const foods = [randomEmptyCell(snakes, walls, [])];
+  return { tick: 0, snakes, foods, walls, finished: false, winnerId: null, playerCount: players.length };
 }
 
 export function setDirection(
@@ -75,8 +78,16 @@ export function killPlayer(state: GameState, playerId: string) {
   if (snake) snake.alive = false;
 }
 
+export function dropBlock(state: GameState, playerId: string) {
+  const snake = state.snakes.find((s) => s.playerId === playerId);
+  if (!snake || !snake.alive || snake.dummy) return;
+  if (snake.segments.length < 2) return;
+  const tail = snake.segments.pop()!;
+  state.walls.push({ x: tail.x, y: tail.y, color: snake.color });
+}
+
 export function addDummy(state: GameState) {
-  const center = randomEmptyCell(state.snakes, state.foods);
+  const center = randomEmptyCell(state.snakes, state.walls, state.foods);
   const id = `dummy-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   const segments: Cell[] = [
     { x: center.x, y: center.y },
@@ -115,7 +126,7 @@ export function step(state: GameState): GameState {
   const ateFoodBy = new Map<string, number>();
 
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.dummy) continue;
     const newHead = proposedHeads.get(s.playerId)!;
 
     if (
@@ -124,6 +135,11 @@ export function step(state: GameState): GameState {
       newHead.y < 0 ||
       newHead.y >= GRID.h
     ) {
+      s.alive = false;
+      continue;
+    }
+
+    if (state.walls.some((w) => w.x === newHead.x && w.y === newHead.y)) {
       s.alive = false;
       continue;
     }
@@ -173,7 +189,7 @@ export function step(state: GameState): GameState {
   if (eatenIdxs.size > 0) {
     state.foods = state.foods.filter((_, i) => !eatenIdxs.has(i));
     for (let i = 0; i < eatenIdxs.size; i++) {
-      const newFood = randomEmptyCell(state.snakes, state.foods);
+      const newFood = randomEmptyCell(state.snakes, state.walls, state.foods);
       if (newFood) state.foods.push(newFood);
     }
   }
@@ -188,11 +204,12 @@ export function step(state: GameState): GameState {
   return state;
 }
 
-function randomEmptyCell(snakes: SnakeState[], foods: Cell[]): Cell {
+function randomEmptyCell(snakes: SnakeState[], walls: WallCell[], foods: Cell[]): Cell {
   const occupied = new Set<string>();
   for (const s of snakes) {
     for (const seg of s.segments) occupied.add(`${seg.x},${seg.y}`);
   }
+  for (const w of walls) occupied.add(`${w.x},${w.y}`);
   for (const f of foods) occupied.add(`${f.x},${f.y}`);
 
   const free: Cell[] = [];
