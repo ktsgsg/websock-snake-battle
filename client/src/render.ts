@@ -18,10 +18,10 @@ export function createCanvas(grid: GridSize): {
   const ctx = canvas.getContext('2d')!;
 
   function draw(input: RenderInput) {
-    ctx.fillStyle = '#0f1216';
+    ctx.fillStyle = '#f8fafc';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
     ctx.lineWidth = 1;
     for (let x = 0; x <= input.grid.w; x++) {
       ctx.beginPath();
@@ -47,7 +47,7 @@ export function createCanvas(grid: GridSize): {
 
     for (const s of input.snakes) {
       const isSelf = s.playerId === input.selfId;
-      ctx.fillStyle = s.alive ? s.color : 'rgba(120,120,120,0.4)';
+      ctx.fillStyle = s.alive ? s.color : 'rgba(0,0,0,0.15)';
       s.segments.forEach((seg, i) => {
         const pad = i === 0 ? 1 : 2;
         ctx.fillRect(
@@ -70,7 +70,7 @@ export function createCanvas(grid: GridSize): {
       }
       if (s.dummy && s.segments.length > 0) {
         const head = s.segments[0];
-        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = '#1a202c';
         ctx.font = `bold ${cell * 0.6}px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
