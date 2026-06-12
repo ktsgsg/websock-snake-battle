@@ -68,6 +68,14 @@ export function createCanvas(grid: GridSize): {
           cell - 3,
         );
       }
+      if (s.dummy && s.segments.length > 0) {
+        const head = s.segments[0];
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${cell * 0.6}px monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('D', head.x * cell + cell / 2, head.y * cell + cell / 2);
+      }
     }
   }
 

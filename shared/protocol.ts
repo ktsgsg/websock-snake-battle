@@ -16,6 +16,7 @@ export type SnakeState = {
   segments: Cell[];
   alive: boolean;
   dir: Direction;
+  dummy?: true;
 };
 
 export type PlayerResult = {
@@ -31,7 +32,8 @@ export type ClientMessage =
   | { type: 'join_room'; code: string; name: string }
   | { type: 'start_game' }
   | { type: 'set_direction'; dir: Direction }
-  | { type: 'restart' };
+  | { type: 'restart' }
+  | { type: 'place_dummy' };
 
 export type ServerMessage =
   | {

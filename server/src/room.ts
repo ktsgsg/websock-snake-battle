@@ -11,6 +11,7 @@ import {
 } from '../../shared/protocol.js';
 import {
   GameState,
+  addDummy,
   createInitialState,
   killPlayer,
   setDirection,
@@ -83,6 +84,11 @@ export class Room {
         this.game = null;
         this.eliminationOrder = [];
         this.broadcastLobby();
+        break;
+      }
+      case 'place_dummy': {
+        if (!this.game || this.game.finished) return;
+        addDummy(this.game);
         break;
       }
       default:

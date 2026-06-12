@@ -74,13 +74,32 @@ export function killPlayer(state: GameState, playerId: string) {
   if (snake) snake.alive = false;
 }
 
+export function addDummy(state: GameState) {
+  const center = randomEmptyCell(state.snakes, state.foods);
+  const id = `dummy-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  const segments: Cell[] = [
+    { x: center.x, y: center.y },
+    { x: Math.max(0, center.x - 1), y: center.y },
+    { x: Math.max(0, center.x - 2), y: center.y },
+  ];
+  state.snakes.push({
+    playerId: id,
+    name: 'DUMMY',
+    color: '#888888',
+    segments,
+    alive: true,
+    dir: 'right',
+    dummy: true,
+  });
+}
+
 export function step(state: GameState): GameState {
   if (state.finished) return state;
   state.tick += 1;
 
   const proposedHeads = new Map<string, Cell>();
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.dummy) continue;
     const head = s.segments[0];
     const d = DELTA[s.dir];
     proposedHeads.set(s.playerId, { x: head.x + d.x, y: head.y + d.y });
@@ -142,7 +161,7 @@ export function step(state: GameState): GameState {
   }
 
   for (const s of state.snakes) {
-    if (!s.alive) continue;
+    if (!s.alive || s.dummy) continue;
     const newHead = proposedHeads.get(s.playerId)!;
     const grew = ateFoodBy.has(s.playerId);
     s.segments.unshift(newHead);
@@ -158,7 +177,7 @@ export function step(state: GameState): GameState {
     }
   }
 
-  const alive = state.snakes.filter((s) => s.alive);
+  const alive = state.snakes.filter((s) => s.alive && !s.dummy);
   if (alive.length <= 1) {
     state.finished = true;
     state.winnerId = alive.length === 1 ? alive[0].playerId : null;

@@ -267,6 +267,12 @@ function renderGame(): HTMLElement {
     hud.appendChild(item);
   }
   root.appendChild(hud);
+  const debugRow = el('div', { className: 'row' });
+  const dummyBtn = el('button', { textContent: '[DEBUG] Place dummy' });
+  dummyBtn.addEventListener('click', () => state.net.send({ type: 'place_dummy' }));
+  debugRow.appendChild(dummyBtn);
+  root.appendChild(debugRow);
+
   root.appendChild(
     el('div', {
       className: 'hint',
