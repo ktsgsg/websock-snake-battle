@@ -404,11 +404,17 @@ function detonateBombs(state: GameState) {
           const cutOff = s.segments.splice(hitIdx);
           for (const seg of cutOff) {
             if (seg.bomb) {
-              queue.push({
+              state.bombs.push({
                 x: seg.x,
                 y: seg.y,
                 color: s.color,
-                fuseTicks: 0,
+                fuseTicks: config.bombFuseTicks,
+              });
+            } else {
+              state.walls.push({
+                x: seg.x,
+                y: seg.y,
+                color: s.color,
               });
             }
           }
