@@ -78,12 +78,6 @@ export function createInitialState(
   };
 }
 
-function computePopIdx(segments: Segment[]): number {
-  let idx = segments.length - 1;
-  while (idx > 0 && segments[idx].bomb) idx--;
-  return idx;
-}
-
 function spawnFood(
   snakes: SnakeState[],
   walls: WallCell[],
@@ -209,11 +203,11 @@ export function step(state: GameState): GameState {
     let collided = false;
     for (const other of state.snakes) {
       const segs = other.segments;
-      const otherGrows =
-        other.playerId === s.playerId ? willGrow : !other.alive;
-      const exemptIdx = otherGrows ? -1 : computePopIdx(segs);
-      for (let i = 0; i < segs.length; i++) {
-        if (i === exemptIdx) continue;
+      const limit =
+        other.playerId === s.playerId
+          ? segs.length - (willGrow ? 0 : 1)
+          : segs.length - (other.alive && !willGrow ? 1 : 0);
+      for (let i = 0; i < limit; i++) {
         if (segs[i].x === newHead.x && segs[i].y === newHead.y) {
           collided = true;
           break;
@@ -227,26 +221,33 @@ export function step(state: GameState): GameState {
     }
   }
 
+  const bombTailCounts = new Map<string, number>();
+  for (const s of state.snakes) {
+    if (!s.alive || s.dummy) continue;
+    let n = 0;
+    for (let i = s.segments.length - 1; i >= 0 && s.segments[i].bomb; i--) n++;
+    bombTailCounts.set(s.playerId, n);
+  }
+
   for (const s of state.snakes) {
     if (!s.alive || s.dummy) continue;
     const newHead = proposedHeads.get(s.playerId)!;
     const grew = ateFoodBy.has(s.playerId);
     s.segments.unshift(newHead);
-    if (!grew) {
-      const popIdx = computePopIdx(s.segments);
-      s.segments.splice(popIdx, 1);
-    }
+    if (!grew) s.segments.pop();
   }
 
   for (const [playerId, foodIdx] of ateFoodBy) {
     if (state.foods[foodIdx]?.kind !== 'bomb') continue;
-    const snake = state.snakes.find((s) => s.playerId === playerId);
-    if (!snake) continue;
-    for (let i = snake.segments.length - 1; i >= 0; i--) {
-      if (!snake.segments[i].bomb) {
-        snake.segments[i].bomb = true;
-        break;
-      }
+    bombTailCounts.set(playerId, (bombTailCounts.get(playerId) ?? 0) + 1);
+  }
+
+  for (const s of state.snakes) {
+    if (!s.alive || s.dummy) continue;
+    for (const seg of s.segments) delete seg.bomb;
+    const n = Math.min(bombTailCounts.get(s.playerId) ?? 0, s.segments.length);
+    for (let i = s.segments.length - n; i < s.segments.length; i++) {
+      s.segments[i].bomb = true;
     }
   }
 
