@@ -4,6 +4,12 @@ export type Cell = { x: number; y: number };
 
 export type WallCell = { x: number; y: number; color: string };
 
+export type Food = Cell & { kind?: 'bomb' };
+
+export type Segment = Cell & { bomb?: true };
+
+export type BombBlock = Cell & { color: string; fuseTicks: number };
+
 export type Player = {
   id: string;
   name: string;
@@ -15,7 +21,7 @@ export type SnakeState = {
   playerId: string;
   name: string;
   color: string;
-  segments: Cell[];
+  segments: Segment[];
   alive: boolean;
   dir: Direction;
   pendingDir?: Direction;
@@ -59,8 +65,10 @@ export type ServerMessage =
       type: 'state';
       tick: number;
       snakes: SnakeState[];
-      foods: Cell[];
+      foods: Food[];
       walls: WallCell[];
+      bombs: BombBlock[];
+      flashes: Cell[];
       timeRemainingMs?: number;
     }
   | {

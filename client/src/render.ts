@@ -1,10 +1,19 @@
-import { Cell, GridSize, SnakeState, WallCell } from '../../shared/protocol.js';
+import {
+  BombBlock,
+  Cell,
+  Food,
+  GridSize,
+  SnakeState,
+  WallCell,
+} from '../../shared/protocol.js';
 
 export type RenderInput = {
   grid: GridSize;
   snakes: SnakeState[];
-  foods: Cell[];
+  foods: Food[];
   walls: WallCell[];
+  bombs: BombBlock[];
+  flashes: Cell[];
   selfId: string;
 };
 
@@ -46,7 +55,7 @@ export function createCanvas(grid: GridSize): {
     }
 
     for (const f of input.foods) {
-      ctx.fillStyle = '#ffca28';
+      ctx.fillStyle = f.kind === 'bomb' ? '#3b82f6' : '#ffca28';
       ctx.beginPath();
       const cx = f.x * cell + cell / 2;
       const cy = f.y * cell + cell / 2;
@@ -67,6 +76,13 @@ export function createCanvas(grid: GridSize): {
           cell - pad * 2,
           cell - pad * 2,
         );
+        if (seg.bomb) {
+          ctx.fillStyle = '#000000';
+          ctx.font = `bold ${cell * 0.6}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('!', seg.x * cell + cell / 2, seg.y * cell + cell / 2);
+        }
       });
       if (isSelf && s.segments.length > 0) {
         const head = s.segments[0];
@@ -87,6 +103,33 @@ export function createCanvas(grid: GridSize): {
         ctx.textBaseline = 'middle';
         ctx.fillText('D', head.x * cell + cell / 2, head.y * cell + cell / 2);
       }
+    }
+
+    for (const b of input.bombs) {
+      ctx.fillStyle = '#1a202c';
+      ctx.beginPath();
+      ctx.arc(
+        b.x * cell + cell / 2,
+        b.y * cell + cell / 2,
+        cell * 0.42,
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${cell * 0.6}px monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(
+        String(b.fuseTicks),
+        b.x * cell + cell / 2,
+        b.y * cell + cell / 2,
+      );
+    }
+
+    for (const fl of input.flashes) {
+      ctx.fillStyle = 'rgba(249, 115, 22, 0.6)';
+      ctx.fillRect(fl.x * cell, fl.y * cell, cell, cell);
     }
   }
 
