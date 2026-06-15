@@ -78,6 +78,12 @@ export function createInitialState(
   };
 }
 
+function computePopIdx(segments: Segment[]): number {
+  let idx = segments.length - 1;
+  while (idx > 0 && segments[idx].bomb) idx--;
+  return idx;
+}
+
 function spawnFood(
   snakes: SnakeState[],
   walls: WallCell[],
@@ -203,11 +209,11 @@ export function step(state: GameState): GameState {
     let collided = false;
     for (const other of state.snakes) {
       const segs = other.segments;
-      const limit =
-        other.playerId === s.playerId
-          ? segs.length - (willGrow ? 0 : 1)
-          : segs.length - (other.alive && !willGrow ? 1 : 0);
-      for (let i = 0; i < limit; i++) {
+      const otherGrows =
+        other.playerId === s.playerId ? willGrow : !other.alive;
+      const exemptIdx = otherGrows ? -1 : computePopIdx(segs);
+      for (let i = 0; i < segs.length; i++) {
+        if (i === exemptIdx) continue;
         if (segs[i].x === newHead.x && segs[i].y === newHead.y) {
           collided = true;
           break;
@@ -226,7 +232,10 @@ export function step(state: GameState): GameState {
     const newHead = proposedHeads.get(s.playerId)!;
     const grew = ateFoodBy.has(s.playerId);
     s.segments.unshift(newHead);
-    if (!grew) s.segments.pop();
+    if (!grew) {
+      const popIdx = computePopIdx(s.segments);
+      s.segments.splice(popIdx, 1);
+    }
   }
 
   for (const [playerId, foodIdx] of ateFoodBy) {
