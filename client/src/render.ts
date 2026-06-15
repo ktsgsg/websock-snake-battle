@@ -56,8 +56,10 @@ export function createCanvas(grid: GridSize): {
 
     for (const s of input.snakes) {
       const isSelf = s.playerId === input.selfId;
-      ctx.fillStyle = s.alive ? s.color : 'rgba(0,0,0,0.15)';
+      const bodyColor = s.alive ? s.color : 'rgba(0,0,0,0.15)';
+      const headColor = s.alive ? darken(s.color, 0.3) : bodyColor;
       s.segments.forEach((seg, i) => {
+        ctx.fillStyle = i === 0 ? headColor : bodyColor;
         const pad = i === 0 ? 1 : 2;
         ctx.fillRect(
           seg.x * cell + pad,
@@ -89,4 +91,12 @@ export function createCanvas(grid: GridSize): {
   }
 
   return { canvas, draw };
+}
+
+function darken(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, Math.round(((n >> 16) & 0xff) * (1 - amount)));
+  const g = Math.max(0, Math.round(((n >> 8) & 0xff) * (1 - amount)));
+  const b = Math.max(0, Math.round((n & 0xff) * (1 - amount)));
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
