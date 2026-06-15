@@ -25,6 +25,9 @@ type State = {
   snakes: SnakeState[];
   foods: Cell[];
   walls: WallCell[];
+  timeRemainingMs: number | null;
+  timeLimitMs: number | null;
+  goalLength: number | null;
   result: { winnerId: string | null; ranking: PlayerResult[] } | null;
   error: string | null;
   unbindKeys: (() => void) | null;
@@ -43,6 +46,9 @@ const state: State = {
   snakes: [],
   foods: [],
   walls: [],
+  timeRemainingMs: null,
+  timeLimitMs: null,
+  goalLength: null,
   result: null,
   error: null,
   unbindKeys: null,
@@ -79,6 +85,10 @@ function handleServer(msg: ServerMessage) {
       state.grid = msg.grid;
       state.snakes = [];
       state.foods = [];
+      state.walls = [];
+      state.timeLimitMs = msg.timeLimitMs ?? null;
+      state.goalLength = msg.goalLength ?? null;
+      state.timeRemainingMs = msg.timeLimitMs ?? null;
       state.result = null;
       state.scene = 'game';
       render();
@@ -87,7 +97,11 @@ function handleServer(msg: ServerMessage) {
       state.snakes = msg.snakes;
       state.foods = msg.foods;
       state.walls = msg.walls ?? [];
-      if (state.scene === 'game') drawGame();
+      state.timeRemainingMs = msg.timeRemainingMs ?? null;
+      if (state.scene === 'game') {
+        drawGame();
+        updateHud();
+      }
       break;
     case 'game_over':
       state.result = { winnerId: msg.winnerId, ranking: msg.ranking };
@@ -109,6 +123,27 @@ let drawFn: ((input: {
   selfId: string;
 }) => void) | null = null;
 
+let timerEl: HTMLElement | null = null;
+let lengthEl: HTMLElement | null = null;
+
+function formatTime(ms: number): string {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function updateHud() {
+  if (timerEl && state.timeRemainingMs !== null) {
+    timerEl.textContent = formatTime(state.timeRemainingMs);
+  }
+  if (lengthEl && state.goalLength !== null && state.playerId) {
+    const selfLen =
+      state.snakes.find((s) => s.playerId === state.playerId)?.segments.length ?? 0;
+    lengthEl.textContent = `${selfLen} / ${state.goalLength}`;
+  }
+}
+
 function leaveRoom() {
   state.net.disconnect();
   state.playerId = null;
@@ -119,6 +154,9 @@ function leaveRoom() {
   state.snakes = [];
   state.foods = [];
   state.walls = [];
+  state.timeRemainingMs = null;
+  state.timeLimitMs = null;
+  state.goalLength = null;
   state.result = null;
   state.error = null;
   state.scene = 'title';
@@ -279,6 +317,28 @@ function renderLobby(): HTMLElement {
 function renderGame(): HTMLElement {
   const root = el('div', { className: 'screen', id: 'gameWrap' });
   const grid = state.grid!;
+
+  timerEl = null;
+  lengthEl = null;
+  if (state.timeLimitMs !== null || state.goalLength !== null) {
+    const stats = el('div', { className: 'stats' });
+    if (state.timeLimitMs !== null) {
+      const t = el('span', { className: 'stat' });
+      t.appendChild(el('span', { className: 'stat-label', textContent: 'TIME ' }));
+      timerEl = el('span', { className: 'stat-value' });
+      t.appendChild(timerEl);
+      stats.appendChild(t);
+    }
+    if (state.goalLength !== null) {
+      const g = el('span', { className: 'stat' });
+      g.appendChild(el('span', { className: 'stat-label', textContent: 'GOAL ' }));
+      lengthEl = el('span', { className: 'stat-value' });
+      g.appendChild(lengthEl);
+      stats.appendChild(g);
+    }
+    root.appendChild(stats);
+  }
+
   const { canvas, draw } = createCanvas(grid);
   drawFn = draw;
   root.appendChild(canvas);
@@ -292,6 +352,7 @@ function renderGame(): HTMLElement {
     hud.appendChild(item);
   }
   root.appendChild(hud);
+  updateHud();
   const debugRow = el('div', { className: 'row' });
   if (import.meta.env.DEV) {
     const dummyBtn = el('button', { textContent: '[DEBUG] Place dummy' });

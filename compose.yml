@@ -9,6 +9,8 @@ services:
       GAME_GRID_H: ${GAME_GRID_H:-}
       GAME_MAX_PLAYERS: ${GAME_MAX_PLAYERS:-}
       GAME_INITIAL_LENGTH: ${GAME_INITIAL_LENGTH:-}
+      GAME_TIME_LIMIT_SEC: ${GAME_TIME_LIMIT_SEC:-}
+      GAME_GOAL_LENGTH: ${GAME_GOAL_LENGTH:-}
 
   client:
     build:

@@ -48,13 +48,20 @@ export type ServerMessage =
       players: Player[];
     }
   | { type: 'lobby_update'; players: Player[] }
-  | { type: 'game_start'; grid: GridSize; tickMs: number }
+  | {
+      type: 'game_start';
+      grid: GridSize;
+      tickMs: number;
+      timeLimitMs?: number;
+      goalLength?: number;
+    }
   | {
       type: 'state';
       tick: number;
       snakes: SnakeState[];
       foods: Cell[];
       walls: WallCell[];
+      timeRemainingMs?: number;
     }
   | {
       type: 'game_over';

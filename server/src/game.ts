@@ -202,6 +202,22 @@ export function step(state: GameState): GameState {
   }
 
   const alive = state.snakes.filter((s) => s.alive && !s.dummy);
+
+  if (config.goalLength > 0) {
+    const reached = alive
+      .filter((s) => s.segments.length >= config.goalLength)
+      .sort((a, b) => b.segments.length - a.segments.length);
+    if (reached.length > 0) {
+      state.finished = true;
+      state.winnerId =
+        reached.length === 1 ||
+        reached[0].segments.length > reached[1].segments.length
+          ? reached[0].playerId
+          : null;
+      return state;
+    }
+  }
+
   const threshold = state.playerCount > 1 ? 1 : 0;
   if (alive.length <= threshold) {
     state.finished = true;
@@ -209,6 +225,24 @@ export function step(state: GameState): GameState {
   }
 
   return state;
+}
+
+export function finishByTimeLimit(state: GameState) {
+  if (state.finished) return;
+  state.finished = true;
+  const alive = state.snakes
+    .filter((s) => s.alive && !s.dummy)
+    .sort((a, b) => b.segments.length - a.segments.length);
+  if (alive.length === 0) {
+    state.winnerId = null;
+  } else if (
+    alive.length === 1 ||
+    alive[0].segments.length > alive[1].segments.length
+  ) {
+    state.winnerId = alive[0].playerId;
+  } else {
+    state.winnerId = null;
+  }
 }
 
 function randomEmptyCell(snakes: SnakeState[], walls: WallCell[], foods: Cell[]): Cell {

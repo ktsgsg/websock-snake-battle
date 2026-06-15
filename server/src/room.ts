@@ -12,6 +12,7 @@ import {
   addDummy,
   createInitialState,
   dropBlock,
+  finishByTimeLimit,
   killPlayer,
   setDirection,
   step,
@@ -29,6 +30,7 @@ export class Room {
   private members = new Map<string, Member>();
   private game: GameState | null = null;
   private loop: NodeJS.Timeout | null = null;
+  private startedAt = 0;
   private eliminationOrder: string[] = [];
   private onEmpty: () => void;
 
@@ -139,16 +141,29 @@ export class Room {
     }));
     this.game = createInitialState(players);
     this.eliminationOrder = [];
-    this.broadcast({ type: 'game_start', grid: config.grid, tickMs: config.tickMs });
+    this.startedAt = Date.now();
+    this.broadcast({
+      type: 'game_start',
+      grid: config.grid,
+      tickMs: config.tickMs,
+      timeLimitMs: config.timeLimitSec > 0 ? config.timeLimitSec * 1000 : undefined,
+      goalLength: config.goalLength > 0 ? config.goalLength : undefined,
+    });
     this.broadcast({
       type: 'state',
       tick: this.game.tick,
       snakes: this.game.snakes,
       foods: this.game.foods,
       walls: this.game.walls,
+      timeRemainingMs: this.remainingMs(),
     });
 
     this.loop = setInterval(() => this.tick(), config.tickMs);
+  }
+
+  private remainingMs(): number | undefined {
+    if (config.timeLimitSec <= 0) return undefined;
+    return Math.max(0, config.timeLimitSec * 1000 - (Date.now() - this.startedAt));
   }
 
   private tick() {
@@ -157,6 +172,15 @@ export class Room {
       this.game.snakes.filter((s) => s.alive).map((s) => s.playerId),
     );
     step(this.game);
+
+    if (
+      !this.game.finished &&
+      config.timeLimitSec > 0 &&
+      Date.now() - this.startedAt >= config.timeLimitSec * 1000
+    ) {
+      finishByTimeLimit(this.game);
+    }
+
     for (const s of this.game.snakes) {
       if (aliveBefore.has(s.playerId) && !s.alive) {
         this.eliminationOrder.push(s.playerId);
@@ -169,6 +193,7 @@ export class Room {
       snakes: this.game.snakes,
       foods: this.game.foods,
       walls: this.game.walls,
+      timeRemainingMs: this.remainingMs(),
     });
 
     if (this.game.finished) {
@@ -186,6 +211,7 @@ export class Room {
     if (!this.game) return [];
     const survivors = this.game.snakes
       .filter((s) => s.alive && !s.dummy)
+      .sort((a, b) => b.segments.length - a.segments.length)
       .map((s) => s.playerId);
     const order = [...this.eliminationOrder].filter(
       (pid) => !this.game!.snakes.find((s) => s.playerId === pid)?.dummy,
