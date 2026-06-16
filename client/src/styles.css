@@ -164,6 +164,13 @@ button:disabled {
   font-weight: 700;
 }
 
+.share-url {
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 13px;
+}
+
 .error {
   margin-top: 14px;
   padding: 10px 12px;

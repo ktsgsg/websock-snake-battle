@@ -62,6 +62,26 @@ const state: State = {
 
 state.net.on(handleServer);
 
+function getRoomCodeFromUrl(): string | null {
+  const code = new URL(location.href).searchParams.get('room');
+  if (!code) return null;
+  const upper = code.trim().toUpperCase();
+  return /^[A-Z0-9]{4}$/.test(upper) ? upper : null;
+}
+
+function setRoomCodeInUrl(code: string | null) {
+  const url = new URL(location.href);
+  if (code) url.searchParams.set('room', code);
+  else url.searchParams.delete('room');
+  history.replaceState(null, '', url.toString());
+}
+
+function shareUrlFor(code: string): string {
+  const url = new URL(location.href);
+  url.searchParams.set('room', code);
+  return url.toString();
+}
+
 function handleServer(msg: ServerMessage) {
   switch (msg.type) {
     case 'room_joined':
@@ -71,6 +91,7 @@ function handleServer(msg: ServerMessage) {
       state.players = msg.players;
       state.error = null;
       state.scene = 'lobby';
+      setRoomCodeInUrl(msg.code);
       render();
       break;
     case 'lobby_update':
@@ -221,6 +242,7 @@ function leaveRoom() {
   state.result = null;
   state.error = null;
   state.scene = 'title';
+  setRoomCodeInUrl(null);
   render();
 }
 
@@ -282,10 +304,12 @@ function renderTitle(): HTMLElement {
   });
 
   const codeLabel = el('label', { textContent: 'Room code (to join)' });
+  const prefilledCode = getRoomCodeFromUrl();
   const codeInput = el('input', {
     type: 'text',
     placeholder: 'XXXX',
     maxLength: 4,
+    value: prefilledCode ?? '',
   }) as HTMLInputElement;
   codeInput.style.textTransform = 'uppercase';
 
@@ -335,6 +359,31 @@ function renderLobby(): HTMLElement {
   root.appendChild(el('h1', { textContent: 'Lobby' }));
   root.appendChild(el('h2', { textContent: 'Share this code with friends:' }));
   root.appendChild(el('div', { className: 'code', textContent: state.roomCode ?? '' }));
+
+  if (state.roomCode) {
+    const shareUrl = shareUrlFor(state.roomCode);
+    const shareRow = el('div', { className: 'row' });
+    const urlField = el('input', {
+      type: 'text',
+      value: shareUrl,
+      readOnly: true,
+      className: 'share-url',
+    }) as HTMLInputElement;
+    urlField.addEventListener('focus', () => urlField.select());
+    const copyBtn = el('button', { textContent: 'Copy URL' });
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => (copyBtn.textContent = 'Copy URL'), 1200);
+      } catch {
+        urlField.select();
+        document.execCommand?.('copy');
+      }
+    });
+    shareRow.append(urlField, copyBtn);
+    root.appendChild(shareRow);
+  }
 
   const list = el('ul', { className: 'players' });
   for (const p of state.players) {
