@@ -100,6 +100,9 @@ function handleServer(msg: ServerMessage) {
       state.result = null;
       state.scene = 'game';
       render();
+      if (msg.countdownMs && msg.countdownMs > 0) {
+        startCountdown(msg.countdownMs);
+      }
       break;
     case 'state':
       state.snakes = msg.snakes;
@@ -137,6 +140,45 @@ let drawFn: ((input: {
 
 let timerEl: HTMLElement | null = null;
 let lengthEl: HTMLElement | null = null;
+let countdownInterval: number | null = null;
+
+function startCountdown(ms: number) {
+  if (countdownInterval !== null) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  const endAt = performance.now() + ms;
+  const tick = () => {
+    const remaining = endAt - performance.now();
+    const wrap = document.getElementById('gameWrap');
+    if (!wrap) {
+      if (countdownInterval !== null) clearInterval(countdownInterval);
+      countdownInterval = null;
+      return;
+    }
+    let overlay = document.getElementById('countdown');
+    if (remaining > 0) {
+      if (!overlay) {
+        overlay = el('div', { id: 'countdown' });
+        wrap.appendChild(overlay);
+      }
+      overlay.textContent = String(Math.ceil(remaining / 1000));
+    } else if (remaining > -700) {
+      if (!overlay) {
+        overlay = el('div', { id: 'countdown' });
+        wrap.appendChild(overlay);
+      }
+      overlay.textContent = 'GO!';
+      overlay.classList.add('countdown-go');
+    } else {
+      overlay?.remove();
+      if (countdownInterval !== null) clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  };
+  tick();
+  countdownInterval = window.setInterval(tick, 100);
+}
 
 function formatTime(ms: number): string {
   const total = Math.ceil(ms / 1000);
@@ -157,6 +199,11 @@ function updateHud() {
 }
 
 function leaveRoom() {
+  if (countdownInterval !== null) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+  document.getElementById('countdown')?.remove();
   state.net.disconnect();
   state.playerId = null;
   state.roomCode = null;

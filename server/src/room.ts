@@ -30,6 +30,7 @@ export class Room {
   private members = new Map<string, Member>();
   private game: GameState | null = null;
   private loop: NodeJS.Timeout | null = null;
+  private countdownTimer: NodeJS.Timeout | null = null;
   private startedAt = 0;
   private eliminationOrder: string[] = [];
   private onEmpty: () => void;
@@ -141,13 +142,15 @@ export class Room {
     }));
     this.game = createInitialState(players);
     this.eliminationOrder = [];
-    this.startedAt = Date.now();
+    const countdownMs = config.countdownSec * 1000;
+    this.startedAt = Date.now() + countdownMs;
     this.broadcast({
       type: 'game_start',
       grid: config.grid,
       tickMs: config.tickMs,
       timeLimitMs: config.timeLimitSec > 0 ? config.timeLimitSec * 1000 : undefined,
       goalLength: config.goalLength > 0 ? config.goalLength : undefined,
+      countdownMs: countdownMs > 0 ? countdownMs : undefined,
     });
     this.broadcast({
       type: 'state',
@@ -160,7 +163,17 @@ export class Room {
       timeRemainingMs: this.remainingMs(),
     });
 
-    this.loop = setInterval(() => this.tick(), config.tickMs);
+    const beginLoop = () => {
+      this.countdownTimer = null;
+      if (this.game) {
+        this.loop = setInterval(() => this.tick(), config.tickMs);
+      }
+    };
+    if (countdownMs > 0) {
+      this.countdownTimer = setTimeout(beginLoop, countdownMs);
+    } else {
+      beginLoop();
+    }
   }
 
   private remainingMs(): number | undefined {
@@ -235,6 +248,10 @@ export class Room {
     if (this.loop) {
       clearInterval(this.loop);
       this.loop = null;
+    }
+    if (this.countdownTimer) {
+      clearTimeout(this.countdownTimer);
+      this.countdownTimer = null;
     }
   }
 

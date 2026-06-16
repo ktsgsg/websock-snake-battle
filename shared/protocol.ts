@@ -60,6 +60,7 @@ export type ServerMessage =
       tickMs: number;
       timeLimitMs?: number;
       goalLength?: number;
+      countdownMs?: number;
     }
   | {
       type: 'state';
