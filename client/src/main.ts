@@ -1,5 +1,7 @@
 import {
+  BombBlock,
   Cell,
+  Food,
   GridSize,
   Player,
   PlayerResult,
@@ -23,8 +25,10 @@ type State = {
   players: Player[];
   grid: GridSize | null;
   snakes: SnakeState[];
-  foods: Cell[];
+  foods: Food[];
   walls: WallCell[];
+  bombs: BombBlock[];
+  flashes: Cell[];
   timeRemainingMs: number | null;
   timeLimitMs: number | null;
   goalLength: number | null;
@@ -46,6 +50,8 @@ const state: State = {
   snakes: [],
   foods: [],
   walls: [],
+  bombs: [],
+  flashes: [],
   timeRemainingMs: null,
   timeLimitMs: null,
   goalLength: null,
@@ -86,6 +92,8 @@ function handleServer(msg: ServerMessage) {
       state.snakes = [];
       state.foods = [];
       state.walls = [];
+      state.bombs = [];
+      state.flashes = [];
       state.timeLimitMs = msg.timeLimitMs ?? null;
       state.goalLength = msg.goalLength ?? null;
       state.timeRemainingMs = msg.timeLimitMs ?? null;
@@ -100,6 +108,8 @@ function handleServer(msg: ServerMessage) {
       state.snakes = msg.snakes;
       state.foods = msg.foods;
       state.walls = msg.walls ?? [];
+      state.bombs = msg.bombs ?? [];
+      state.flashes = msg.flashes ?? [];
       state.timeRemainingMs = msg.timeRemainingMs ?? null;
       if (state.scene === 'game') {
         drawGame();
@@ -121,8 +131,10 @@ function handleServer(msg: ServerMessage) {
 let drawFn: ((input: {
   grid: GridSize;
   snakes: SnakeState[];
-  foods: Cell[];
+  foods: Food[];
   walls: WallCell[];
+  bombs: BombBlock[];
+  flashes: Cell[];
   selfId: string;
 }) => void) | null = null;
 
@@ -201,6 +213,8 @@ function leaveRoom() {
   state.snakes = [];
   state.foods = [];
   state.walls = [];
+  state.bombs = [];
+  state.flashes = [];
   state.timeRemainingMs = null;
   state.timeLimitMs = null;
   state.goalLength = null;
@@ -217,6 +231,8 @@ function drawGame() {
     snakes: state.snakes,
     foods: state.foods,
     walls: state.walls,
+    bombs: state.bombs,
+    flashes: state.flashes,
     selfId: state.playerId,
   });
 }
@@ -440,6 +456,8 @@ function renderResult(): HTMLElement {
       snakes: state.snakes,
       foods: state.foods,
       walls: state.walls,
+      bombs: state.bombs,
+      flashes: [],
       selfId: state.playerId,
     });
     wrap.appendChild(canvas);

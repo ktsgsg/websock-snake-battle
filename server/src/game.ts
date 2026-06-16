@@ -1,7 +1,10 @@
 import {
+  BombBlock,
   Cell,
   Direction,
+  Food,
   PLAYER_COLORS,
+  Segment,
   SnakeState,
   WallCell,
 } from '../../shared/protocol.js';
@@ -10,8 +13,10 @@ import { config } from './config.js';
 export type GameState = {
   tick: number;
   snakes: SnakeState[];
-  foods: Cell[];
+  foods: Food[];
   walls: WallCell[];
+  bombs: BombBlock[];
+  flashes: Cell[];
   finished: boolean;
   winnerId: string | null;
   playerCount: number;
@@ -44,7 +49,7 @@ export function createInitialState(
   const snakes: SnakeState[] = players.map((p, i) => {
     const { pos, dir } = spawns[i];
     const dx = dir === 'right' ? -1 : 1;
-    const segments: Cell[] = [];
+    const segments: Segment[] = [];
     for (let j = 0; j < config.initialLength; j++) {
       segments.push({ x: pos.x + dx * j, y: pos.y });
     }
@@ -58,8 +63,30 @@ export function createInitialState(
     };
   });
   const walls: WallCell[] = [];
-  const foods = [randomEmptyCell(snakes, walls, [])];
-  return { tick: 0, snakes, foods, walls, finished: false, winnerId: null, playerCount: players.length };
+  const bombs: BombBlock[] = [];
+  const foods: Food[] = [spawnFood(snakes, walls, bombs, [])];
+  return {
+    tick: 0,
+    snakes,
+    foods,
+    walls,
+    bombs,
+    flashes: [],
+    finished: false,
+    winnerId: null,
+    playerCount: players.length,
+  };
+}
+
+function spawnFood(
+  snakes: SnakeState[],
+  walls: WallCell[],
+  bombs: BombBlock[],
+  foods: Food[],
+): Food {
+  const cell = randomEmptyCell(snakes, walls, bombs, foods);
+  const kind = Math.random() < config.bombFoodChance ? 'bomb' : undefined;
+  return kind ? { ...cell, kind } : cell;
 }
 
 export function setDirection(
@@ -83,13 +110,22 @@ export function dropBlock(state: GameState, playerId: string) {
   if (!snake || !snake.alive || snake.dummy) return;
   if (snake.segments.length < 2) return;
   const tail = snake.segments.pop()!;
-  state.walls.push({ x: tail.x, y: tail.y, color: snake.color });
+  if (tail.bomb) {
+    state.bombs.push({
+      x: tail.x,
+      y: tail.y,
+      color: snake.color,
+      fuseTicks: config.bombFuseTicks,
+    });
+  } else {
+    state.walls.push({ x: tail.x, y: tail.y, color: snake.color });
+  }
 }
 
 export function addDummy(state: GameState) {
-  const center = randomEmptyCell(state.snakes, state.walls, state.foods);
+  const center = randomEmptyCell(state.snakes, state.walls, state.bombs, state.foods);
   const id = `dummy-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  const segments: Cell[] = [
+  const segments: Segment[] = [
     { x: center.x, y: center.y },
     { x: Math.max(0, center.x - 1), y: center.y },
     { x: Math.max(0, center.x - 2), y: center.y },
@@ -108,6 +144,7 @@ export function addDummy(state: GameState) {
 export function step(state: GameState): GameState {
   if (state.finished) return state;
   state.tick += 1;
+  state.flashes = [];
 
   for (const s of state.snakes) {
     if (s.pendingDir && OPPOSITE[s.dir] !== s.pendingDir) {
@@ -184,6 +221,14 @@ export function step(state: GameState): GameState {
     }
   }
 
+  const bombTailCounts = new Map<string, number>();
+  for (const s of state.snakes) {
+    if (!s.alive || s.dummy) continue;
+    let n = 0;
+    for (let i = s.segments.length - 1; i >= 0 && s.segments[i].bomb; i--) n++;
+    bombTailCounts.set(s.playerId, n);
+  }
+
   for (const s of state.snakes) {
     if (!s.alive || s.dummy) continue;
     const newHead = proposedHeads.get(s.playerId)!;
@@ -192,14 +237,29 @@ export function step(state: GameState): GameState {
     if (!grew) s.segments.pop();
   }
 
+  for (const [playerId, foodIdx] of ateFoodBy) {
+    if (state.foods[foodIdx]?.kind !== 'bomb') continue;
+    bombTailCounts.set(playerId, (bombTailCounts.get(playerId) ?? 0) + 1);
+  }
+
+  for (const s of state.snakes) {
+    if (!s.alive || s.dummy) continue;
+    for (const seg of s.segments) delete seg.bomb;
+    const n = Math.min(bombTailCounts.get(s.playerId) ?? 0, s.segments.length);
+    for (let i = s.segments.length - n; i < s.segments.length; i++) {
+      s.segments[i].bomb = true;
+    }
+  }
+
   const eatenIdxs = new Set(ateFoodBy.values());
   if (eatenIdxs.size > 0) {
     state.foods = state.foods.filter((_, i) => !eatenIdxs.has(i));
     for (let i = 0; i < eatenIdxs.size; i++) {
-      const newFood = randomEmptyCell(state.snakes, state.walls, state.foods);
-      if (newFood) state.foods.push(newFood);
+      state.foods.push(spawnFood(state.snakes, state.walls, state.bombs, state.foods));
     }
   }
+
+  detonateBombs(state);
 
   const alive = state.snakes.filter((s) => s.alive && !s.dummy);
 
@@ -245,12 +305,18 @@ export function finishByTimeLimit(state: GameState) {
   }
 }
 
-function randomEmptyCell(snakes: SnakeState[], walls: WallCell[], foods: Cell[]): Cell {
+function randomEmptyCell(
+  snakes: SnakeState[],
+  walls: WallCell[],
+  bombs: BombBlock[],
+  foods: Food[],
+): Cell {
   const occupied = new Set<string>();
   for (const s of snakes) {
     for (const seg of s.segments) occupied.add(`${seg.x},${seg.y}`);
   }
   for (const w of walls) occupied.add(`${w.x},${w.y}`);
+  for (const b of bombs) occupied.add(`${b.x},${b.y}`);
   for (const f of foods) occupied.add(`${f.x},${f.y}`);
 
   const free: Cell[] = [];
@@ -261,4 +327,99 @@ function randomEmptyCell(snakes: SnakeState[], walls: WallCell[], foods: Cell[])
   }
   if (free.length === 0) return { x: 0, y: 0 };
   return free[Math.floor(Math.random() * free.length)];
+}
+
+const DIRS_4: Cell[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+];
+
+function detonateBombs(state: GameState) {
+  const queue: BombBlock[] = [];
+  state.bombs = state.bombs.filter((b) => {
+    b.fuseTicks -= 1;
+    if (b.fuseTicks <= 0) {
+      queue.push(b);
+      return false;
+    }
+    return true;
+  });
+
+  const flashSet = new Set<string>();
+  const addFlash = (x: number, y: number) => {
+    const k = `${x},${y}`;
+    if (!flashSet.has(k)) {
+      flashSet.add(k);
+      state.flashes.push({ x, y });
+    }
+  };
+
+  while (queue.length > 0) {
+    const b = queue.shift()!;
+    const affected: Cell[] = [{ x: b.x, y: b.y }];
+    addFlash(b.x, b.y);
+
+    for (const d of DIRS_4) {
+      for (let r = 1; r <= config.bombRange; r++) {
+        const x = b.x + d.x * r;
+        const y = b.y + d.y * r;
+        if (x < 0 || x >= config.grid.w || y < 0 || y >= config.grid.h) break;
+
+        const wallIdx = state.walls.findIndex((w) => w.x === x && w.y === y);
+        if (wallIdx !== -1) {
+          state.walls.splice(wallIdx, 1);
+          addFlash(x, y);
+          break;
+        }
+
+        const bombIdx = state.bombs.findIndex((bb) => bb.x === x && bb.y === y);
+        if (bombIdx !== -1) {
+          const chained = state.bombs.splice(bombIdx, 1)[0];
+          chained.fuseTicks = 0;
+          queue.push(chained);
+          addFlash(x, y);
+          break;
+        }
+
+        addFlash(x, y);
+        affected.push({ x, y });
+      }
+    }
+
+    for (const cell of affected) {
+      for (const s of state.snakes) {
+        if (!s.alive) continue;
+        if (s.segments.length === 0) continue;
+        const head = s.segments[0];
+        if (head.x === cell.x && head.y === cell.y) {
+          s.alive = false;
+          continue;
+        }
+        const hitIdx = s.segments.findIndex(
+          (seg, i) => i >= 1 && seg.x === cell.x && seg.y === cell.y,
+        );
+        if (hitIdx !== -1) {
+          const cutOff = s.segments.splice(hitIdx);
+          for (const seg of cutOff) {
+            if (seg.bomb) {
+              state.bombs.push({
+                x: seg.x,
+                y: seg.y,
+                color: s.color,
+                fuseTicks: config.bombFuseTicks,
+              });
+            } else {
+              state.walls.push({
+                x: seg.x,
+                y: seg.y,
+                color: s.color,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
 }

@@ -158,6 +158,8 @@ export class Room {
       snakes: this.game.snakes,
       foods: this.game.foods,
       walls: this.game.walls,
+      bombs: this.game.bombs,
+      flashes: this.game.flashes,
       timeRemainingMs: this.remainingMs(),
     });
 
@@ -206,6 +208,8 @@ export class Room {
       snakes: this.game.snakes,
       foods: this.game.foods,
       walls: this.game.walls,
+      bombs: this.game.bombs,
+      flashes: this.game.flashes,
       timeRemainingMs: this.remainingMs(),
     });
 
