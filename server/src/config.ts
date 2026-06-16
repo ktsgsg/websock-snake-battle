@@ -26,6 +26,7 @@ export const config = {
   initialLength: num(process.env.GAME_INITIAL_LENGTH, 3, 1),
   timeLimitSec: num(process.env.GAME_TIME_LIMIT_SEC, 0, 0),
   goalLength: num(process.env.GAME_GOAL_LENGTH, 0, 0),
+  countdownSec: num(process.env.GAME_COUNTDOWN_SEC, 3, 0),
 };
 
 console.log('[config]', config);
