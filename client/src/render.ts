@@ -102,6 +102,14 @@ export function createCanvas(grid: GridSize): {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('D', head.x * cell + cell / 2, head.y * cell + cell / 2);
+      } else if (s.alive && s.name && s.segments.length > 0) {
+        const head = s.segments[0];
+        const initial = [...s.name][0]?.toUpperCase() ?? '?';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${cell * 0.65}px ui-sans-serif, system-ui, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initial, head.x * cell + cell / 2, head.y * cell + cell / 2);
       }
     }
 
