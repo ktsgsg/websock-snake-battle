@@ -86,57 +86,14 @@ export function createCanvas(grid: GridSize): {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('D', head.x * cell + cell / 2, head.y * cell + cell / 2);
-      }
-    }
-
-    for (const s of input.snakes) {
-      if (!s.alive || s.dummy || s.segments.length === 0) continue;
-      const head = s.segments[0];
-      const isSelf = s.playerId === input.selfId;
-      const cx = head.x * cell + cell / 2;
-      const above = head.y > 1;
-      const baseY = above ? head.y * cell - 4 : head.y * cell + cell + 4;
-
-      if (s.name) {
-        ctx.font = `600 ${cell * 0.5}px ui-sans-serif, system-ui, sans-serif`;
+      } else if (s.alive && s.name && s.segments.length > 0) {
+        const head = s.segments[0];
+        const initial = [...s.name][0]?.toUpperCase() ?? '?';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${cell * 0.65}px ui-sans-serif, system-ui, sans-serif`;
         ctx.textAlign = 'center';
-        ctx.textBaseline = above ? 'bottom' : 'top';
-        const w = ctx.measureText(s.name).width;
-        const padX = 4;
-        const padY = 2;
-        const boxH = cell * 0.6;
-        const boxY = above ? baseY - boxH : baseY;
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.fillRect(cx - w / 2 - padX, boxY - padY, w + padX * 2, boxH + padY * 2);
-        ctx.fillStyle = darken(s.color, 0.2);
-        ctx.fillText(s.name, cx, baseY);
-      }
-
-      if (isSelf) {
-        const t = performance.now() / 250;
-        const bob = Math.sin(t) * 2;
-        const arrowH = cell * 0.7;
-        const arrowW = cell * 0.5;
-        const labelGap = s.name ? cell * 0.75 : 4;
-        const tipY = above
-          ? head.y * cell - labelGap + bob
-          : head.y * cell + cell + labelGap - bob;
-        ctx.fillStyle = darken(s.color, 0.15);
-        ctx.beginPath();
-        if (above) {
-          ctx.moveTo(cx, tipY);
-          ctx.lineTo(cx - arrowW / 2, tipY - arrowH);
-          ctx.lineTo(cx + arrowW / 2, tipY - arrowH);
-        } else {
-          ctx.moveTo(cx, tipY);
-          ctx.lineTo(cx - arrowW / 2, tipY + arrowH);
-          ctx.lineTo(cx + arrowW / 2, tipY + arrowH);
-        }
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        ctx.textBaseline = 'middle';
+        ctx.fillText(initial, head.x * cell + cell / 2, head.y * cell + cell / 2);
       }
     }
   }
