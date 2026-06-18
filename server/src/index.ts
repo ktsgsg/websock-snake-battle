@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { ClientMessage, ServerMessage } from '../../shared/protocol.js';
+import { config } from './config.js';
 import { Room } from './room.js';
 import { RoomRegistry } from './rooms.js';
 
@@ -19,13 +20,34 @@ type Session = {
   id: string;
   socket: WebSocket;
   room: Room | null;
+  alive: boolean;
 };
 
 const sessions = new WeakMap<WebSocket, Session>();
 
+const keepaliveMs = config.wsKeepaliveSec * 1000;
+const keepalive = setInterval(() => {
+  for (const ws of wss.clients) {
+    const session = sessions.get(ws);
+    if (!session) continue;
+    if (!session.alive) {
+      ws.terminate();
+      continue;
+    }
+    session.alive = false;
+    ws.ping();
+  }
+}, keepaliveMs);
+keepalive.unref?.();
+wss.on('close', () => clearInterval(keepalive));
+
 wss.on('connection', (socket) => {
-  const session: Session = { id: randomUUID(), socket, room: null };
+  const session: Session = { id: randomUUID(), socket, room: null, alive: true };
   sessions.set(socket, session);
+
+  socket.on('pong', () => {
+    session.alive = true;
+  });
 
   socket.on('message', (data) => {
     let msg: ClientMessage;
