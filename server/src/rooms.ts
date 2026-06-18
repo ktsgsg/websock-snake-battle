@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { DatabaseSync } from 'node:sqlite';
+import { DatabaseSync, StatementSync } from 'node:sqlite';
 import { config } from './config.js';
 import { Room } from './room.js';
 
@@ -9,6 +9,8 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export class RoomRegistry {
   private activeRooms = new Map<string, Room>();
   private db: DatabaseSync;
+  private insertRoomStmt: StatementSync;
+  private roomExistsStmt: StatementSync;
 
   constructor(dbPath = config.roomDbPath) {
     mkdirSync(dirname(dbPath), { recursive: true });
@@ -19,15 +21,16 @@ export class RoomRegistry {
         createdAt INTEGER NOT NULL
       )
     `);
+    this.insertRoomStmt = this.db.prepare(
+      'INSERT INTO rooms (code, createdAt) VALUES (?, ?)',
+    );
+    this.roomExistsStmt = this.db.prepare('SELECT 1 FROM rooms WHERE code = ?');
   }
 
   create(): Room {
     let code = this.generateCode();
     while (this.exists(code)) code = this.generateCode();
-    this.db.prepare('INSERT INTO rooms (code, createdAt) VALUES (?, ?)').run(
-      code,
-      Date.now(),
-    );
+    this.insertRoomStmt.run(code, Date.now());
     const room = this.openRoom(code);
     return room;
   }
@@ -49,7 +52,7 @@ export class RoomRegistry {
   }
 
   private exists(code: string): boolean {
-    const row = this.db.prepare('SELECT 1 FROM rooms WHERE code = ?').get(code);
+    const row = this.roomExistsStmt.get(code);
     return row !== undefined;
   }
 
