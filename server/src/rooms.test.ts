@@ -28,6 +28,7 @@ test('room code remains joinable after all members disconnect', () => {
   assert.ok(reopened);
   assert.equal(reopened.code, firstRoom.code);
   assert.notEqual(reopened, firstRoom);
+  assert.equal(reopened.canJoin(), true);
 
   const secondSocket = openSocketMock();
   reopened.addMember('p2', 'bob', secondSocket);
