@@ -41,6 +41,7 @@ export const config = {
   bombFuseTicks: num(process.env.GAME_BOMB_FUSE_TICKS, 3, 1),
   bombRange: num(process.env.GAME_BOMB_RANGE, 3, 1),
   bombFoodChance: numFloat(process.env.GAME_BOMB_FOOD_CHANCE, 0.25, 0, 1),
+  roomDbPath: process.env.GAME_ROOM_DB_PATH || 'data/rooms.sqlite',
 };
 
 console.log('[config]', config);

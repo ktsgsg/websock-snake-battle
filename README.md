@@ -67,6 +67,7 @@ make tunnel     # Cloudflare Tunnel 経由で公開
 | `GAME_BOMB_FUSE_TICKS` | 3 | 爆弾起爆までの tick 数 |
 | `GAME_BOMB_RANGE` | 3 | 爆発の各方向最大マス |
 | `GAME_BOMB_FOOD_CHANCE` | 0.25 | 青い餌の出現確率 (0.0〜1.0) |
+| `GAME_ROOM_DB_PATH` | `data/rooms.sqlite` | ルームコード永続化に使う SQLite ファイルパス |
 | `TUNNEL_TOKEN` | — | Cloudflare Tunnel トークン（`make tunnel` 使用時のみ） |
 
 ## 技術スタック

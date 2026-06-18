@@ -1,20 +1,43 @@
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { config } from './config.js';
 import { Room } from './room.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 export class RoomRegistry {
-  private rooms = new Map<string, Room>();
+  private activeRooms = new Map<string, Room>();
+  private db: DatabaseSync;
+
+  constructor(dbPath = config.roomDbPath) {
+    mkdirSync(dirname(dbPath), { recursive: true });
+    this.db = new DatabaseSync(dbPath);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS rooms (
+        code TEXT PRIMARY KEY,
+        createdAt INTEGER NOT NULL
+      )
+    `);
+  }
 
   create(): Room {
     let code = this.generateCode();
-    while (this.rooms.has(code)) code = this.generateCode();
-    const room = new Room(code, () => this.rooms.delete(code));
-    this.rooms.set(code, room);
+    while (this.exists(code)) code = this.generateCode();
+    this.db.prepare('INSERT INTO rooms (code, createdAt) VALUES (?, ?)').run(
+      code,
+      Date.now(),
+    );
+    const room = this.openRoom(code);
     return room;
   }
 
   get(code: string): Room | undefined {
-    return this.rooms.get(code.toUpperCase());
+    const normalized = code.toUpperCase();
+    const existing = this.activeRooms.get(normalized);
+    if (existing) return existing;
+    if (!this.exists(normalized)) return undefined;
+    return this.openRoom(normalized);
   }
 
   private generateCode(): string {
@@ -23,5 +46,18 @@ export class RoomRegistry {
       s += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
     }
     return s;
+  }
+
+  private exists(code: string): boolean {
+    const row = this.db.prepare('SELECT 1 FROM rooms WHERE code = ?').get(code);
+    return row !== undefined;
+  }
+
+  private openRoom(code: string): Room {
+    const existing = this.activeRooms.get(code);
+    if (existing) return existing;
+    const room = new Room(code, () => this.activeRooms.delete(code));
+    this.activeRooms.set(code, room);
+    return room;
   }
 }
