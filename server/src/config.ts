@@ -41,6 +41,8 @@ export const config = {
   bombFuseTicks: num(process.env.GAME_BOMB_FUSE_TICKS, 3, 1),
   bombRange: num(process.env.GAME_BOMB_RANGE, 3, 1),
   bombFoodChance: numFloat(process.env.GAME_BOMB_FOOD_CHANCE, 0.25, 0, 1),
+  wsKeepaliveSec: num(process.env.WS_KEEPALIVE_SEC, 30, 5),
+  roomEmptyGraceSec: num(process.env.ROOM_EMPTY_GRACE_SEC, 600, 0),
 };
 
 console.log('[config]', config);
